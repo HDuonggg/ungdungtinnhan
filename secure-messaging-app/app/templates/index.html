@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Secure Chat Room</title>
+    <style>
+        body { font-family: 'Segoe UI', Arial, sans-serif; background: linear-gradient(120deg, #89f7fe 0%, #66a6ff 100%); margin: 0; padding: 0; min-height: 100vh;}
+        .container { max-width: 420px; margin: 60px auto; background: #fff; border-radius: 16px; box-shadow: 0 8px 32px rgba(60,60,120,0.15); padding: 32px 28px 24px 28px;}
+        h1 { text-align: center; color: #35424a; margin-bottom: 28px; letter-spacing: 1px;}
+        form { margin-bottom: 18px;}
+        label { font-weight: 500; color: #35424a; display: block; margin-bottom: 8px;}
+        input[type="text"] { width: 100%; padding: 12px; margin-bottom: 14px; border: 1px solid #b0c4de; border-radius: 8px; font-size: 1rem; transition: border 0.2s;}
+        input[type="text"]:focus { border: 1.5px solid #66a6ff; outline: none;}
+        button { background: linear-gradient(90deg, #66a6ff 0%, #89f7fe 100%); color: #fff; border: none; padding: 12px 0; width: 100%; border-radius: 8px; font-size: 1rem; font-weight: 600; cursor: pointer; transition: background 0.2s; box-shadow: 0 2px 8px rgba(102,166,255,0.08);}
+        button:hover { background: linear-gradient(90deg, #89f7fe 0%, #66a6ff 100%);}
+        #chat-section { margin-top: 10px;}
+        #chat-box { min-height: 80px; max-height: 220px; overflow-y: auto; background: #f4f8fb; border-radius: 8px; padding: 12px; margin-bottom: 12px; box-shadow: 0 1px 4px rgba(102,166,255,0.07);}
+        .message { background: #e2e2e2; color: #222; padding: 10px 14px; border-radius: 7px; margin: 8px 0; word-break: break-all; font-size: 0.98rem; box-shadow: 0 1px 2px rgba(0,0,0,0.03);}
+        .error { color: #d8000c; background: #ffd2d2; border-radius: 7px; padding: 10px 14px; margin: 8px 0; font-size: 0.98rem;}
+        @media (max-width: 600px) { .container { padding: 18px 6px 14px 6px;}}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Vào phòng chat bảo mật</h1>
+        <form id="room-form">
+            <label for="username">Tên của bạn:</label>
+            <input type="text" id="username" placeholder="Nhập tên..." required>
+            <label for="room_key">Nhập mã khoá/phòng:</label>
+            <input type="text" id="room_key" placeholder="Nhập mã khoá/phòng..." required>
+            <button type="submit">Vào phòng</button>
+        </form>
+        <div id="chat-section" style="display:none;">
+            <div id="chat-box"></div>
+            <form id="message-form">
+                <input type="text" id="message-input" placeholder="Nhập tin nhắn..." required>
+                <button type="submit">Gửi</button>
+            </form>
+        </div>
+    </div>
+    <script>
+        let roomKey = '';
+        let username = '';
+
+        document.getElementById('room-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            roomKey = document.getElementById('room_key').value;
+            username = document.getElementById('username').value;
+            if (roomKey && username) {
+                document.getElementById('chat-section').style.display = 'block';
+                document.getElementById('room-form').style.display = 'none';
+                loadMessages();
+                setInterval(loadMessages, 2000);
+            }
+        });
+
+        document.getElementById('message-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const messageInput = document.getElementById('message-input');
+            const message = messageInput.value;
+            fetch('/chat', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ message: message, key: roomKey, username: username })
+            })
+            .then(response => response.json())
+            .then(data => {
+                messageInput.value = '';
+                loadMessages();
+            });
+        });
+
+        function loadMessages() {
+            fetch('/messages', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ key: roomKey })
+            })
+            .then(response => response.json())
+            .then(data => {
+                const chatBox = document.getElementById('chat-box');
+                chatBox.innerHTML = '';
+                data.forEach(msg => {
+                    const msgDiv = document.createElement('div');
+                    msgDiv.className = 'message';
+                    msgDiv.textContent = msg.user + ': ' + msg.message;
+                    chatBox.appendChild(msgDiv);
+                });
+            });
+        }
+    </script>
+</body>
+</html>
